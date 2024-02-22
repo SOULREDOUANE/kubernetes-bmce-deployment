@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spring-bmce-config
+data:
+  FTP_HOST: backend-service
+  FTP_PORT: "8080"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ftp-server-deployment
+  labels:
+    app: ftp-server
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ftp-server
+  template:
+    metadata:
+      labels:
+        app: ftp-server
+    spec:
+      containers:
+      - name: ftp-server
+        image: soulredouane/spring-bmce-ftp:1
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 15000
+          name: ftp-port
+        envFrom:
+        - configMapRef:
+            name: spring-bmce-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ftp-service
+spec:
+  selector:
+    app: ftp-server
+  ports:
+  - name: ftp-service-port
+    protocol: TCP
+    port: 5432
+    targetPort: ftp-port
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spring-bmce-config-ftp
+data:
+  FTP_HOST: ftp-service
+  FTP_PORT: "15000"

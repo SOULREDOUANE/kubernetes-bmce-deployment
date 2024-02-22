@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+  labels:
+    app: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      imagePullSecrets:
+        - name: regcred
+      containers:
+      - name: backend
+        image: soulredouane/spring-bmce:2.0
+        imagePullPolicy: Always
+        env:
+          - name: FTP_HOST
+            value: ftp-service
+          - name : FTP_PORT
+            value: "15000"
+          - name: DB_HOST
+            value: "postgres"
+          - name: DB_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: postgresql
+                key: POSTGRES_USER
+          - name: DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: postgresql
+                key: POSTGRES_PASSWORD
+          - name: DB_NAME
+            valueFrom:
+              secretKeyRef:
+                name: postgresql
+                key: POSTGRES_DB
+        ports:
+        - containerPort: 8080
+          name: backend-port
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+spec:
+  selector:
+    app: backend
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
