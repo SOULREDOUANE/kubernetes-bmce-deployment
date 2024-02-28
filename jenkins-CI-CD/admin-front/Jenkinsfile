@@ -1,0 +1,36 @@
+pipeline {
+    agent any
+
+
+    stages {
+        stage('Checkout') {
+            steps {
+                script {
+                    checkout([$class: 'GitSCM', branches: [[name: '*/main']], userRemoteConfigs: [[credentialsId: 'my-github-access-key', url: 'https://github.com/Bankofafrica-projetintegre/PI_Admin_Front.git']]])
+                }
+            }
+        }
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    sh "docker logout"
+                    // Build Docker image using the Dockerfile in your project
+                    sh "docker build -t soulredouane/react-bmce-admin:1.0 ."
+                }
+            }
+        }
+       stage('Login') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'docker-hub-token', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    sh "echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin"
+                }
+            }
+        }
+        stage('Push') {
+            steps {
+                sh 'docker push soulredouane/react-bmce-admin:1.0'
+                sh "docker logout"
+            }
+        }
+    }
+}
